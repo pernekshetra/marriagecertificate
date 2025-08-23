@@ -17,13 +17,7 @@
   bg.onload = draw;
   bg.src = "base.png";
 
-  const bgFile = document.getElementById('bgFile');
   const downloadBtn = document.getElementById('download');
-
-  const fontSelect = document.getElementById('fontSelect');
-  const fontColor = document.getElementById('fontColor');
-  const toggleShadow = document.getElementById('toggleShadow');
-  const fontBold = document.getElementById('fontBold');
 
   const selText = document.getElementById('selText');
   const selColor = document.getElementById('selColor');
@@ -426,36 +420,6 @@
       syncInspector();
       draw();
     }
-  });
-
-  
-  fontSelect.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).font = fontSelect.value;
-    }
-    syncInspector();
-    draw();
-  });
-  fontColor.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).color = fontColor.value;
-    }
-    syncInspector();
-    draw();
-  });
-  toggleShadow.addEventListener('change', () => {
-    for(const key of selectedKeys) {
-      items.get(key).shadow = toggleShadow.checked;
-    }
-    syncInspector();
-    draw();
-  });
-  fontBold.addEventListener('change', () => {
-    for(const key of selectedKeys) {
-      items.get(key).bold = fontBold.checked;
-    }
-    syncInspector();
-    draw();
   });
 
   downloadBtn.addEventListener('click', () => {
