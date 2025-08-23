@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>PERNE MUCHILOT BHAGHAVATHI KSHETRA - Marriage Certificate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h2>PERNE MUCHILOT BHAGHAVATHI KSHETRA</h2>
+  <h4>MARRIAGE CERTIFICATE</h4>
+
+  <canvas id="c" width="741" height="1024"></canvas>
+
+  <div class="grid" style="margin-top:12px;">
+    <fieldset>
+      <legend>Background & Export</legend>
+      <div class="row">
+        <!-- <label>Background Image <input id="bgFile" type="file" accept="image/*" /></label> -->
+        <button id="download">Download PNG</button>
+      </div>
+      <div class="hint">Tip: You can still drag text on canvas to fine-tune positions.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Global Text Options (apply to selection)</legend>
+      <div class="row">
+        <label>Font
+          <select id="fontSelect">
+            <option value="system-ui, sans-serif" selected>System Sans</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Monospace</option>
+          </select>
+        </label>
+        <label>Color <input id="fontColor" type="color" value="#000000" /></label>
+        <label><input id="toggleShadow" type="checkbox" checked /> Shadow</label>
+        <label><input id="fontBold" type="checkbox" /> Bold</label>
+      </div>
+      <small class="hint">These controls change the currently selected item(s). Shift+Click to select multiple.</small>
+    </fieldset>
+
+    <fieldset>
+      <legend>Groom details</legend>
+      <label>Name <input id="p1_name" type="text" placeholder="Groom name" /></label>
+      <label>Parents <input id="p1_parents" type="text" placeholder="Father and mother of groom" /></label>
+      <label>Address <textarea id="p1_address" placeholder="Address (multi-line allowed)"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Bride details</legend>
+      <label>Name <input id="p2_name" type="text" placeholder="Bride name" /></label>
+      <label>Parents <input id="p2_parents" type="text" placeholder="Father and mother of bride" /></label>
+      <label>Address <textarea id="p2_address" placeholder="Address (multi-line allowed)"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Selected Text Properties</legend>
+      <div class="row">
+        <label>Content <input id="selText" type="text" placeholder="(no selection)"></label>
+      </div>
+      <div class="row">
+        <label>Color <input id="selColor" type="color" value="#000000"></label>
+        <label>Size
+          <select id="selSize">
+            <option value="12">12 px</option>
+            <option value="16">16 px</option>
+            <option value="20">20 px</option>
+            <option value="24">24 px</option>
+            <option value="28" selected>28 px</option>
+            <option value="32">32 px</option>
+            <option value="36">36 px</option>
+            <option value="48">48 px</option>
+            <option value="60">60 px</option>
+            <option value="72">72 px</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Font
+          <select id="selFont">
+            <option value="system-ui, sans-serif" selected>System Sans</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Monospace</option>
+          </select>
+        </label>
+        <label><input id="selBold" type="checkbox" /> Bold</label>
+        <label><input id="selShadow" type="checkbox" checked /> Shadow</label>
+      </div>
+      <small class="hint">Tip: Click to select, Shift+Click for multi-select, drag to move, Del/Backspace to
+        delete.</small>
+    </fieldset>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+
+</html>
