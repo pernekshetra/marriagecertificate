@@ -1,201 +1,88 @@
 (() => {
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
-  const DPR = window.devicePixelRatio || 1;
-  function scaleForDPR() {
-    const cssW = canvas.width, cssH = canvas.height;
-    canvas.width = cssW * DPR;
-    canvas.height = cssH * DPR;
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    draw();
-  }
-
-  const bg = new Image();
-  bg.onload = draw;
-  bg.src = "base.png";
-
-  const downloadBtn = document.getElementById('download');
-
-  const selText = document.getElementById('selText');
-  const selColor = document.getElementById('selColor');
-  const selSize = document.getElementById('selSize');
-  const selFont = document.getElementById('selFont');
-  const selBold = document.getElementById('selBold');
-  const selShadow = document.getElementById('selShadow');
-
-  const fields = {
-    p1_name: document.getElementById('p1_name'),
-    p1_parents: document.getElementById('p1_parents'),
-    p1_address: document.getElementById('p1_address'),
-    p2_name: document.getElementById('p2_name'),
-    p2_parents: document.getElementById('p2_parents'),
-    p2_address: document.getElementById('p2_address'),
-    marriage_date: document.getElementById('marriage_date'),
-    registration_number: document.getElementById('registration_number')
-  };
-
-  const items = new Map();
-  let selectedKeys = new Set();
-
-  const defaults = {
-    font: 'system-ui, sans-serif',
-    size: 28,
-    color: '#000000',
-    shadow: false,
-    align: 'center',
-    bold: false,
-    draggable: true,
-    wrapWidth: 400,
-    lineHeight: 1.25,
-  };
-
-  const presetStyles = {
-    p1_parents: { size: 22, lineHeight: 1.25, bold: true },
-    p1_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
-
-    p2_parents: { size: 22, lineHeight: 1.25, bold: true },
-    p2_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
-
-    marriage_date: { size: 20, bold: true },
-    registration_number: { size: 20, bold: true }
-  };
-
-  // Fix image disappearing on resize
-  scaleForDPR();
-  let rafId;
-  window.addEventListener('resize', () => {
+  function requestRedraw() {
     if(rafId) {
       cancelAnimationFrame(rafId);
     }
-    rafId = requestAnimationFrame(scaleForDPR);
-  });
-
-  function getPrimary() {
-    const key = Array.from(selectedKeys).at(-1);
-    return key ? items.get(key) : null;
+    rafId = requestAnimationFrame(() => { rafId = null; draw(); });
   }
 
-  function ensureItem(key) {
-    if (!items.has(key)) {
-      const base = {
-        key,
-        x: 0,
-        y: 0,
-        text: '',
-        ...defaults,
-        ...(presetStyles[key] || {}), // ← apply per-field overrides
-      };
-      items.set(key, base);
-    }
-    return items.get(key);
-  }
-
-  function initialDraw() {
-    const W = canvas.width / DPR;
-    const H = canvas.height / DPR;
-    const midX = W / 2;
-
-    ensureItem('p1_name');
-    ensureItem('p1_parents');
-    ensureItem('p1_address');
-    ensureItem('and');
-    ensureItem('p2_name');
-    ensureItem('p2_parents');
-    ensureItem('p2_address');
-    ensureItem('marriage_date');
-    ensureItem('registration_number');
-
-    items.get('p1_name').x = midX;
-    items.get('p1_name').y = H * 0.35;
-
-    items.get('p1_parents').x = midX;
-    items.get('p1_parents').y = H * 0.39;
-
-    items.get('p1_address').x = midX;
-    items.get('p1_address').y = H * 0.42;
-
-    items.get('and').x = midX;
-    items.get('and').y = H * 0.51;
-
-    items.get('p2_name').x = midX;
-    items.get('p2_name').y = H * 0.58;
-
-    items.get('p2_parents').x = midX;
-    items.get('p2_parents').y = H * 0.62;
-
-    items.get('p2_address').x = midX;
-    items.get('p2_address').y = H * 0.65;
-
-    items.get('marriage_date').x = midX;
-    items.get('marriage_date').y = H * 0.73;
-
-    items.get('registration_number').x = midX;
-    items.get('registration_number').y = H * 0.78;
-
-    const els = ['p1_name', 'p1_parents', 'p1_address', 'and', 'p2_name', 'p2_parents', 'p2_address', 'marriage_date', 'registration_number'];
-    for(const k of els) {
-      items.get(k).align = 'center';
-    }
-    draw();
-  }
-
-  initialDraw();
-
-  
-  function drawWrappedText(text, x, y, maxWidth, lineHeightPx, align) {
-    const words = text.split(/\s+/);
-    let line = '';
-    let cursorY = y;
-    const lines = [];
-
-    for(let n = 0; n < words.length; n++) {
-      const testLine = line ? line + ' ' + words[n] : words[n];
-      const metrics = ctx.measureText(testLine);
-      if(metrics.width > maxWidth && n > 0) {
-        lines.push(line);
-        line = words[n];
-      } else {
-        line = testLine;
-      }
-    }
-    if(line) {
-      lines.push(line);
-    }
-
-    for(const ln of lines) {
-      ctx.fillText(ln, x, cursorY);
-      cursorY += lineHeightPx;
-    }
-  }
-
-  function measureWrapped(text, maxWidth, size, lineHeightMultiplier) {
-    const words = (text || '').trim().split(/\s+/);
-    let line = '', lines = [], maxLineW = 0;
-
-    for(let i = 0; i < words.length; i++) {
-      const test = line ? line + ' ' + words[i] : words[i];
-      const w = ctx.measureText(test).width;
-      if(w > maxWidth && i > 0) {
-        lines.push(line);
-        maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
-        line = words[i];
+  function hitTest(x, y) {
+    const keys = Array.from(items.keys());
+    for(let i = keys.length - 1; i >= 0; i--) {
+      const it = items.get(keys[i]);
+      ctx.save();
+      ctx.font = `${it.bold ? '700 ' : ''}${it.size}px ${it.font}`;
+      const isAddress = /address$/.test(it.key);
+      if(isAddress) {
+        const m = measureWrapped(it.text, it.wrapWidth, it.size, it.lineHeight || defaults.lineHeight);
+        let left = it.x, top = it.y - it.size;
+        if(it.align === 'center') {
+          left = it.x - m.maxLineW / 2;
+        }
+        else if(it.align === 'right') {
+          left = it.x - m.maxLineW;
+        }
+        const inside = (x >= left && x <= left + m.maxLineW && y >= top && y <= top + m.height);
+        ctx.restore();
+        if(inside) {
+          return it.key;
+        }
       }
       else {
-        line = test;
+        const w = ctx.measureText(it.text || '').width;
+        const h = it.size;
+        let left = it.x, top = it.y - h;
+        if(it.align === 'center') {
+          left = it.x - w / 2;
+        }
+        else if(it.align === 'right') {
+          left = it.x - w;
+        }
+        const inside = (x >= left && x <= left + w && y >= top && y <= top + h);
+        ctx.restore();
+        if(inside) {
+          return it.key;
+        }
       }
     }
-    if(line) {
-      lines.push(line);
-      maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
-    }
-
-    const lineH = Math.round(size * lineHeightMultiplier);
-    const height = lines.length * lineH;
-    return { lines, maxLineW, lineH, height };
+    return null;
   }
-  
+
+  function selectOnly(key) {
+    selectedKeys.clear();
+    if(key) {
+      selectedKeys.add(key);
+    }
+  }
+
+  function syncInspector() {
+    const it = getPrimary();
+    const disabled = !it;
+    for(const el of [selText, selColor, selSize, selFont, selBold, selShadow]) {
+      el.disabled = disabled;
+    }
+    if(!it) {
+      selText.value = '';
+      return;
+    }
+    selText.value = it.text || '';
+    selColor.value = it.color || '#000000';
+    selSize.value = String(it.size || 36);
+    selFont.value = it.font || 'system-ui, sans-serif';
+    selBold.checked = !!it.bold;
+    selShadow.checked = !!it.shadow;
+  }
+
+  function bindField(key, el) {
+    ensureItem(key);
+    const update = () => {
+      items.get(key).text = el.value;
+      draw();
+    };
+    el.addEventListener('input', update);
+    update(); 
+  }
+
   function draw() {
     const W = canvas.width / DPR, H = canvas.height / DPR;
     ctx.clearRect(0, 0, W, H);
@@ -271,15 +158,207 @@
     }
   }
 
-  function bindField(key, el) {
-    ensureItem(key);
-    const update = () => {
-      items.get(key).text = el.value;
-      draw();
-    };
-    el.addEventListener('input', update);
-    update(); 
+  function measureWrapped(text, maxWidth, size, lineHeightMultiplier) {
+    const words = (text || '').trim().split(/\s+/);
+    let line = '', lines = [], maxLineW = 0;
+
+    for(let i = 0; i < words.length; i++) {
+      const test = line ? line + ' ' + words[i] : words[i];
+      const w = ctx.measureText(test).width;
+      if(w > maxWidth && i > 0) {
+        lines.push(line);
+        maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
+        line = words[i];
+      }
+      else {
+        line = test;
+      }
+    }
+    if(line) {
+      lines.push(line);
+      maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
+    }
+
+    const lineH = Math.round(size * lineHeightMultiplier);
+    const height = lines.length * lineH;
+    return { lines, maxLineW, lineH, height };
   }
+
+  function drawWrappedText(text, x, y, maxWidth, lineHeightPx, align) {
+    const words = text.split(/\s+/);
+    let line = '';
+    let cursorY = y;
+    const lines = [];
+
+    for(let n = 0; n < words.length; n++) {
+      const testLine = line ? line + ' ' + words[n] : words[n];
+      const metrics = ctx.measureText(testLine);
+      if(metrics.width > maxWidth && n > 0) {
+        lines.push(line);
+        line = words[n];
+      } else {
+        line = testLine;
+      }
+    }
+    if(line) {
+      lines.push(line);
+    }
+
+    for(const ln of lines) {
+      ctx.fillText(ln, x, cursorY);
+      cursorY += lineHeightPx;
+    }
+  }
+
+  function scaleForDPR() {
+    const cssW = canvas.width, cssH = canvas.height;
+    canvas.width = cssW * DPR;
+    canvas.height = cssH * DPR;
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    draw();
+  }
+
+  function getPrimary() {
+    const key = Array.from(selectedKeys).at(-1);
+    return key ? items.get(key) : null;
+  }
+
+  function ensureItem(key) {
+    if (!items.has(key)) {
+      const base = {
+        key,
+        x: 0,
+        y: 0,
+        text: '',
+        ...defaults,
+        ...(presetStyles[key] || {}), // ← apply per-field overrides
+      };
+      items.set(key, base);
+    }
+    return items.get(key);
+  }
+
+  function initialDraw() {
+    const W = canvas.width / DPR;
+    const H = canvas.height / DPR;
+    const midX = W / 2;
+
+    ensureItem('p1_name');
+    ensureItem('p1_parents');
+    ensureItem('p1_address');
+    ensureItem('and');
+    ensureItem('p2_name');
+    ensureItem('p2_parents');
+    ensureItem('p2_address');
+    ensureItem('marriage_date');
+    ensureItem('registration_number');
+
+    items.get('p1_name').x = midX;
+    items.get('p1_name').y = H * 0.35;
+
+    items.get('p1_parents').x = midX;
+    items.get('p1_parents').y = H * 0.39;
+
+    items.get('p1_address').x = midX;
+    items.get('p1_address').y = H * 0.42;
+
+    items.get('and').x = midX;
+    items.get('and').y = H * 0.51;
+
+    items.get('p2_name').x = midX;
+    items.get('p2_name').y = H * 0.58;
+
+    items.get('p2_parents').x = midX;
+    items.get('p2_parents').y = H * 0.62;
+
+    items.get('p2_address').x = midX;
+    items.get('p2_address').y = H * 0.65;
+
+    items.get('marriage_date').x = midX;
+    items.get('marriage_date').y = H * 0.73;
+
+    items.get('registration_number').x = midX;
+    items.get('registration_number').y = H * 0.78;
+
+    const els = ['p1_name', 'p1_parents', 'p1_address', 'and', 'p2_name', 'p2_parents', 'p2_address', 'marriage_date', 'registration_number'];
+    for(const k of els) {
+      items.get(k).align = 'center';
+    }
+    draw();
+  }
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const DPR = window.devicePixelRatio || 1;
+
+  const bg = new Image();
+  bg.onload = draw;
+  bg.src = "base.png";
+
+  const downloadBtn = document.getElementById('download');
+
+  const selText = document.getElementById('selText');
+  const selColor = document.getElementById('selColor');
+  const selSize = document.getElementById('selSize');
+  const selFont = document.getElementById('selFont');
+  const selBold = document.getElementById('selBold');
+  const selShadow = document.getElementById('selShadow');
+
+  const fields = {
+    p1_name: document.getElementById('p1_name'),
+    p1_parents: document.getElementById('p1_parents'),
+    p1_address: document.getElementById('p1_address'),
+    p2_name: document.getElementById('p2_name'),
+    p2_parents: document.getElementById('p2_parents'),
+    p2_address: document.getElementById('p2_address'),
+    marriage_date: document.getElementById('marriage_date'),
+    registration_number: document.getElementById('registration_number')
+  };
+
+  const items = new Map();
+  let selectedKeys = new Set();
+
+  const defaults = {
+    font: 'system-ui, sans-serif',
+    size: 28,
+    color: '#000000',
+    shadow: false,
+    align: 'center',
+    bold: false,
+    draggable: true,
+    wrapWidth: 400,
+    lineHeight: 1.25,
+  };
+
+  const presetStyles = {
+    p1_parents: { size: 22, lineHeight: 1.25, bold: true },
+    p1_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
+
+    p2_parents: { size: 22, lineHeight: 1.25, bold: true },
+    p2_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
+
+    marriage_date: { size: 20, bold: true },
+    registration_number: { size: 20, bold: true }
+  };
+
+  // Fix image disappearing on resize
+  scaleForDPR();
+  let rafId = null;
+
+  // Debounced resize (mobile URL bar hide/show fires resize)
+  window.addEventListener('resize', requestRedraw);
+  // Redraw while scrolling (iOS Safari can drop canvas during scroll)
+  window.addEventListener('scroll', requestRedraw, { passive: true });
+  // Redraw when tab becomes visible again
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) requestRedraw(); });
+  // Redraw on orientation change (some iOS versions won’t fire resize immediately)
+  window.addEventListener('orientationchange', requestRedraw);
+  // Redraw when page is restored from bfcache (back/forward navigation)
+  window.addEventListener('pageshow', requestRedraw);
+
+  initialDraw();
 
   bindField('p1_name', fields.p1_name);
   bindField('p1_address', fields.p1_address);
@@ -297,24 +376,6 @@
    
   bindField('marriage_date', fields.marriage_date);
   bindField('registration_number', fields.registration_number);
-
-  function syncInspector() {
-    const it = getPrimary();
-    const disabled = !it;
-    for(const el of [selText, selColor, selSize, selFont, selBold, selShadow]) {
-      el.disabled = disabled;
-    }
-    if(!it) {
-      selText.value = '';
-      return;
-    }
-    selText.value = it.text || '';
-    selColor.value = it.color || '#000000';
-    selSize.value = String(it.size || 36);
-    selFont.value = it.font || 'system-ui, sans-serif';
-    selBold.checked = !!it.bold;
-    selShadow.checked = !!it.shadow;
-  }
 
   selText.addEventListener('input', () => {
     for(const key of selectedKeys) {
@@ -360,55 +421,6 @@
 
   let draggingKey = null;
   let dragOffset = {x: 0, y: 0};
-
-  function hitTest(x, y) {
-    const keys = Array.from(items.keys());
-    for(let i = keys.length - 1; i >= 0; i--) {
-      const it = items.get(keys[i]);
-      ctx.save();
-      ctx.font = `${it.bold ? '700 ' : ''}${it.size}px ${it.font}`;
-      const isAddress = /address$/.test(it.key);
-      if(isAddress) {
-        const m = measureWrapped(it.text, it.wrapWidth, it.size, it.lineHeight || defaults.lineHeight);
-        let left = it.x, top = it.y - it.size;
-        if(it.align === 'center') {
-          left = it.x - m.maxLineW / 2;
-        }
-        else if(it.align === 'right') {
-          left = it.x - m.maxLineW;
-        }
-        const inside = (x >= left && x <= left + m.maxLineW && y >= top && y <= top + m.height);
-        ctx.restore();
-        if(inside) {
-          return it.key;
-        }
-      }
-      else {
-        const w = ctx.measureText(it.text || '').width;
-        const h = it.size;
-        let left = it.x, top = it.y - h;
-        if(it.align === 'center') {
-          left = it.x - w / 2;
-        }
-        else if(it.align === 'right') {
-          left = it.x - w;
-        }
-        const inside = (x >= left && x <= left + w && y >= top && y <= top + h);
-        ctx.restore();
-        if(inside) {
-          return it.key;
-        }
-      }
-    }
-    return null;
-  }
-
-  function selectOnly(key) {
-    selectedKeys.clear();
-    if(key) {
-      selectedKeys.add(key);
-    }
-  }
 
   canvas.addEventListener('mousedown', (e) => {
     const r = canvas.getBoundingClientRect();
