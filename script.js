@@ -39,6 +39,8 @@
     p2_name: document.getElementById('p2_name'),
     p2_parents: document.getElementById('p2_parents'),
     p2_address: document.getElementById('p2_address'),
+    marriage_date: document.getElementById('marriage_date'),
+    registration_number: document.getElementById('registration_number')
   };
 
   const items = new Map();
@@ -57,15 +59,33 @@
     lineHeight: 1.25,
   };
 
+  const presetStyles = {
+    p1_parents: { size: 22, lineHeight: 1.25, bold: true },
+    p1_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
+
+    p2_parents: { size: 22, lineHeight: 1.25, bold: true },
+    p2_address: { size: 20, lineHeight: 1.3, bold: true, wrapWidth: 420 },
+
+    marriage_date: { size: 20, bold: true },
+    registration_number: { size: 20, bold: true }
+  };
+
   function getPrimary() {
     const key = Array.from(selectedKeys).at(-1);
     return key ? items.get(key) : null;
   }
 
-  
   function ensureItem(key) {
     if (!items.has(key)) {
-      items.set(key, {key, x: 0, y: 0, text: '', ...defaults});
+      const base = {
+        key,
+        x: 0,
+        y: 0,
+        text: '',
+        ...defaults,
+        ...(presetStyles[key] || {}), // ← apply per-field overrides
+      };
+      items.set(key, base);
     }
     return items.get(key);
   }
@@ -78,29 +98,42 @@
     ensureItem('p1_name');
     ensureItem('p1_parents');
     ensureItem('p1_address');
+    ensureItem('and');
     ensureItem('p2_name');
     ensureItem('p2_parents');
     ensureItem('p2_address');
+    ensureItem('marriage_date');
+    ensureItem('registration_number');
 
     items.get('p1_name').x = midX;
     items.get('p1_name').y = H * 0.35;
 
     items.get('p1_parents').x = midX;
-    items.get('p1_parents').y = H * 0.38;
+    items.get('p1_parents').y = H * 0.39;
 
     items.get('p1_address').x = midX;
-    items.get('p1_address').y = H * 0.41;
+    items.get('p1_address').y = H * 0.42;
+
+    items.get('and').x = midX;
+    items.get('and').y = H * 0.51;
 
     items.get('p2_name').x = midX;
-    items.get('p2_name').y = H * 0.55;
+    items.get('p2_name').y = H * 0.58;
 
     items.get('p2_parents').x = midX;
-    items.get('p2_parents').y = H * 0.58;
+    items.get('p2_parents').y = H * 0.62;
 
     items.get('p2_address').x = midX;
-    items.get('p2_address').y = H * 0.61;
+    items.get('p2_address').y = H * 0.65;
 
-    for(const k of ['p1_name', 'p1_parents', 'p1_address', 'p2_name', 'p2_parents', 'p2_address']) {
+    items.get('marriage_date').x = midX;
+    items.get('marriage_date').y = H * 0.73;
+
+    items.get('registration_number').x = midX;
+    items.get('registration_number').y = H * 0.78;
+
+    const els = ['p1_name', 'p1_parents', 'p1_address', 'and', 'p2_name', 'p2_parents', 'p2_address', 'marriage_date', 'registration_number'];
+    for(const k of els) {
       items.get(k).align = 'center';
     }
     draw();
@@ -202,7 +235,6 @@
     }
   }
 
-  
   function bindField(key, el) {
     ensureItem(key);
     const update = () => {
@@ -213,16 +245,23 @@
     update(); 
   }
 
-  
   bindField('p1_name', fields.p1_name);
   bindField('p1_address', fields.p1_address);
   bindField('p1_parents', fields.p1_parents);
-
+  
   bindField('p2_name', fields.p2_name);
   bindField('p2_parents', fields.p2_parents);
   bindField('p2_address', fields.p2_address);
 
-  
+  ensureItem('and');
+  items.get('and').text = 'AND';
+  items.get('and').size = 28;
+  items.get('and').bold = false;
+  items.get('and').color = '#000000';
+   
+  bindField('marriage_date', fields.marriage_date);
+  bindField('registration_number', fields.registration_number);
+
   function syncInspector() {
     const it = getPrimary();
     const disabled = !it;
@@ -241,7 +280,6 @@
     selShadow.checked = !!it.shadow;
   }
 
-  
   selText.addEventListener('input', () => {
     for (const key of selectedKeys) items.get(key).text = selText.value;
     draw();
@@ -498,6 +536,9 @@
   fields.p2_name.value = 'BRIDE NAME ';
   fields.p2_parents.value = 'Father name and Mothers name of the bride';
   fields.p2_address.value = 'Bride address line 1\nBride address line 2';
+
+  fields.marriage_date.value = '2025-11-18';
+  fields.registration_number.value = '01/2025';
 
   for(const k in fields) {
     fields[k].dispatchEvent(new Event('input'));
