@@ -162,6 +162,31 @@
     }
   }
 
+  function measureWrapped(text, maxWidth, size, lineHeightMultiplier) {
+    const words = (text || '').trim().split(/\s+/);
+    let line = '', lines = [], maxLineW = 0;
+
+    for(let i = 0; i < words.length; i++) {
+      const test = line ? line + ' ' + words[i] : words[i];
+      const w = ctx.measureText(test).width;
+      if(w > maxWidth && i > 0) {
+        lines.push(line);
+        maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
+        line = words[i];
+      }
+      else {
+        line = test;
+      }
+    }
+    if(line) {
+      lines.push(line);
+      maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
+    }
+
+    const lineH = Math.round(size * lineHeightMultiplier);
+    const height = lines.length * lineH;
+    return { lines, maxLineW, lineH, height };
+  }
   
   function draw() {
     const W = canvas.width / DPR, H = canvas.height / DPR;
@@ -206,22 +231,31 @@
         ctx.fillText(it.text || '', 0, 0);
       }
 
-      
       if(selectedKeys.has(it.key)) {
-        const w = ctx.measureText((it.text || '')).width;
-        const h = it.size;
-        let x0 = 0, y0 = -h;
+        let boxW, boxH, x0 = 0, y0 = -it.size;
+
+        if(/address$/.test(it.key)) {
+          const m = measureWrapped(it.text, it.wrapWidth, it.size, it.lineHeight || defaults.lineHeight);
+          boxW = m.maxLineW;
+          boxH = m.height;
+        }
+        else {
+          boxW = ctx.measureText(it.text || '').width;
+          boxH = it.size;
+        }
+
         if(it.align === 'center') {
-          x0 = -w / 2;
+          x0 = -boxW / 2;
         }
         else if(it.align === 'right') {
-          x0 = -w;
+          x0 = -boxW;
         }
+
         ctx.save();
         ctx.shadowColor = 'transparent';
         ctx.lineWidth = 1;
         ctx.strokeStyle = 'rgba(0,0,0,.35)';
-        ctx.strokeRect(x0 - 6, y0 - 6, w + 12, h + 12);
+        ctx.strokeRect(x0 - 6, y0 - 6, boxW + 12, boxH + 12);
         ctx.restore();
       }
 
@@ -275,31 +309,47 @@
   }
 
   selText.addEventListener('input', () => {
-    for (const key of selectedKeys) items.get(key).text = selText.value;
-    draw();
-  });
-  selColor.addEventListener('input', () => {
-    for (const key of selectedKeys) items.get(key).color = selColor.value;
-    draw();
-  });
-  selSize.addEventListener('input', () => {
-    for (const key of selectedKeys) items.get(key).size = +selSize.value;
-    draw();
-  });
-  selFont.addEventListener('input', () => {
-    for (const key of selectedKeys) items.get(key).font = selFont.value;
-    draw();
-  });
-  selBold.addEventListener('change', () => {
-    for (const key of selectedKeys) items.get(key).bold = selBold.checked;
-    draw();
-  });
-  selShadow.addEventListener('change', () => {
-    for (const key of selectedKeys) items.get(key).shadow = selShadow.checked;
+    for(const key of selectedKeys) {
+      items.get(key).text = selText.value;
+    }
     draw();
   });
 
-  
+  selColor.addEventListener('input', () => {
+    for(const key of selectedKeys) {
+      items.get(key).color = selColor.value;
+    }
+    draw();
+  });
+
+  selSize.addEventListener('input', () => {
+    for(const key of selectedKeys) {
+      items.get(key).size = +selSize.value;
+    }
+    draw();
+  });
+
+  selFont.addEventListener('input', () => {
+    for(const key of selectedKeys) {
+      items.get(key).font = selFont.value;
+    }
+    draw();
+  });
+
+  selBold.addEventListener('change', () => {
+    for(const key of selectedKeys) {
+      items.get(key).bold = selBold.checked;
+    }
+    draw();
+  });
+
+  selShadow.addEventListener('change', () => {
+    for(const key of selectedKeys) {
+      items.get(key).shadow = selShadow.checked;
+    }
+    draw();
+  });
+
   let draggingKey = null;
   let dragOffset = {x: 0, y: 0};
 
@@ -311,16 +361,15 @@
       ctx.font = `${it.bold ? '700 ' : ''}${it.size}px ${it.font}`;
       const isAddress = /address$/.test(it.key);
       if(isAddress) {
-        const w = it.wrapWidth;
-        const h = it.size * defaults.lineHeight * 2.2;
+        const m = measureWrapped(it.text, it.wrapWidth, it.size, it.lineHeight || defaults.lineHeight);
         let left = it.x, top = it.y - it.size;
         if(it.align === 'center') {
-          left = it.x - w / 2;
+          left = it.x - m.maxLineW / 2;
         }
         else if(it.align === 'right') {
-          left = it.x - w;
+          left = it.x - m.maxLineW;
         }
-        const inside = (x >= left && x <= left + w && y >= top && y <= top + h);
+        const inside = (x >= left && x <= left + m.maxLineW && y >= top && y <= top + m.height);
         ctx.restore();
         if(inside) {
           return it.key;
