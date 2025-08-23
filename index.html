@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>PERNE MUCHILOT BHAGHAVATHI KSHETRA - Marriage Certificate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚭</text></svg>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,7 +15,7 @@
 
   <canvas id="c" width="741" height="1024"></canvas>
 
-  <div class="grid" style="margin-top:12px;">
+  <div class="grid">
     <fieldset>
       <legend>Background & Export</legend>
       <div class="row">
@@ -48,8 +49,6 @@
       <legend>Selected Text Properties</legend>
       <div class="row">
         <label>Content <input id="selText" type="text" placeholder="(no selection)"></label>
-      </div>
-      <div class="row">
         <label>Color <input id="selColor" type="color" value="#000000"></label>
         <label>Size
           <select id="selSize">
@@ -65,8 +64,6 @@
             <option value="72">72 px</option>
           </select>
         </label>
-      </div>
-      <div class="row">
         <label>Font
           <select id="selFont">
             <option value="system-ui, sans-serif" selected>System Sans</option>

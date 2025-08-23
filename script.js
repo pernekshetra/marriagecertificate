@@ -87,7 +87,7 @@
     const W = canvas.width / DPR, H = canvas.height / DPR;
     ctx.clearRect(0, 0, W, H);
 
-    if(bg.complete && bg.naturalWidth) {
+    if(bgReady && bg.complete && bg.naturalWidth) {
       const ratio = Math.max(W / bg.naturalWidth, H / bg.naturalHeight);
       const iw = bg.naturalWidth * ratio, ih = bg.naturalHeight * ratio;
       const ix = (W - iw) / 2, iy = (H - ih) / 2;
@@ -293,8 +293,9 @@
   const ctx = canvas.getContext('2d');
   const DPR = window.devicePixelRatio || 1;
 
+  let bgReady = false;
   const bg = new Image();
-  bg.onload = draw;
+  bg.onload = () => { bgReady = true; draw(); };
   bg.src = "base.png";
 
   const downloadBtn = document.getElementById('download');
