@@ -2,14 +2,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   max-width: 1100px;
+  width: 100%;
+}
+
+.grid > fieldset {
+  flex: 1 1 45%;
+  min-width: 280px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .grid > fieldset {
+    flex-basis: 100%;
+  }
 }
 
 fieldset {
