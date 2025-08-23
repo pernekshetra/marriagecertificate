@@ -9,9 +9,17 @@
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    draw();
   }
   scaleForDPR();
-  window.addEventListener('resize', scaleForDPR);
+  // Fix image disappearing on resize
+  let rafId;
+  window.addEventListener('resize', () => {
+    if(rafId) {
+      cancelAnimationFrame(rafId);
+    }
+    rafId = requestAnimationFrame(scaleForDPR);
+  });
 
   const bg = new Image();
   bg.onload = draw;
