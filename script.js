@@ -11,15 +11,6 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     draw();
   }
-  scaleForDPR();
-  // Fix image disappearing on resize
-  let rafId;
-  window.addEventListener('resize', () => {
-    if(rafId) {
-      cancelAnimationFrame(rafId);
-    }
-    rafId = requestAnimationFrame(scaleForDPR);
-  });
 
   const bg = new Image();
   bg.onload = draw;
@@ -48,7 +39,6 @@
   const items = new Map();
   let selectedKeys = new Set();
 
-  
   const defaults = {
     font: 'system-ui, sans-serif',
     size: 28,
@@ -71,6 +61,16 @@
     marriage_date: { size: 20, bold: true },
     registration_number: { size: 20, bold: true }
   };
+
+  // Fix image disappearing on resize
+  scaleForDPR();
+  let rafId;
+  window.addEventListener('resize', () => {
+    if(rafId) {
+      cancelAnimationFrame(rafId);
+    }
+    rafId = requestAnimationFrame(scaleForDPR);
+  });
 
   function getPrimary() {
     const key = Array.from(selectedKeys).at(-1);
