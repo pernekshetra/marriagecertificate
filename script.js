@@ -58,9 +58,9 @@
   function syncInspector() {
     const it = getPrimary();
     const disabled = !it;
-    for(const el of [selText, selColor, selSize, selFont, selBold, selShadow]) {
-      el.disabled = disabled;
-    }
+
+    inspectorEls.forEach(el => el && (el.disabled = disabled));
+
     if(!it) {
       selText.value = '';
       return;
@@ -306,7 +306,10 @@
   const selFont = document.getElementById('selFont');
   const selBold = document.getElementById('selBold');
   const selShadow = document.getElementById('selShadow');
-
+  const inspectorEls = [selText, selColor, selSize, selFont, selBold, selShadow];
+  // Disable all inspector controls on load
+  inspectorEls.forEach(el => el && (el.disabled = true));
+  
   const fields = {
     p1_name: document.getElementById('p1_name'),
     p1_parents: document.getElementById('p1_parents'),
@@ -577,4 +580,5 @@
   for(const k in fields) {
     fields[k].dispatchEvent(new Event('input'));
   }
+  syncInspector();
 })();
