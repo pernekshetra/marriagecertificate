@@ -6,6 +6,16 @@
     rafId = requestAnimationFrame(() => { rafId = null; draw(); });
   }
 
+  function bindField(key, el) {
+    ensureItem(key);
+    const update = () => {
+      items.get(key).text = el.value;
+      draw();
+    };
+    el.addEventListener('input', update);
+    update();
+  }
+
   function hitTest(x, y) {
     const keys = Array.from(items.keys());
     for(let i = keys.length - 1; i >= 0; i--) {
@@ -46,25 +56,6 @@
       }
     }
     return null;
-  }
-
-  function selectOnly(key) {
-    selectedKeys.clear();
-    if(key) {
-      selectedKeys.add(key);
-    }
-  }
-
-  function syncInspector() {}
-
-  function bindField(key, el) {
-    ensureItem(key);
-    const update = () => {
-      items.get(key).text = el.value;
-      draw();
-    };
-    el.addEventListener('input', update);
-    update();
   }
 
   function draw() {
@@ -108,34 +99,6 @@
       }
       else {
         ctx.fillText(it.text || '', 0, 0);
-      }
-
-      if(selectedKeys.has(it.key)) {
-        let boxW, boxH, x0 = 0, y0 = -it.size;
-
-        if(/address$/.test(it.key)) {
-          const m = measureWrapped(it.text, it.wrapWidth, it.size, it.lineHeight || defaults.lineHeight);
-          boxW = m.maxLineW;
-          boxH = m.height;
-        }
-        else {
-          boxW = ctx.measureText(it.text || '').width;
-          boxH = it.size;
-        }
-
-        if(it.align === 'center') {
-          x0 = -boxW / 2;
-        }
-        else if(it.align === 'right') {
-          x0 = -boxW;
-        }
-
-        ctx.save();
-        ctx.shadowColor = 'transparent';
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(0,0,0,.35)';
-        ctx.strokeRect(x0 - 6, y0 - 6, boxW + 12, boxH + 12);
-        ctx.restore();
       }
 
       ctx.restore();
@@ -437,8 +400,6 @@
   };
 
   const items = new Map();
-  let selectedKeys = new Set();
-
   const defaults = {
     font: 'system-ui, sans-serif',
     size: 28,
@@ -535,8 +496,6 @@
     });
   }
 
-  // Selected text properties removed in admin view.
-
   let draggingKey = null;
   let dragOffset = {x: 0, y: 0};
 
@@ -545,68 +504,28 @@
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
     const key = hitTest(x, y);
-
-    if(key) {
-      if(e.shiftKey) {
-        if(selectedKeys.has(key)) {
-          selectedKeys.delete(key);
-        }
-        else {
-          selectedKeys.add(key);
-        }
-      }
-      else {
-        selectOnly(key);
-      }
-      draggingKey = key;
-      const it = items.get(key);
-      dragOffset.x = x - it.x;
-      dragOffset.y = y - it.y;
-      canvas.style.cursor = 'move';
-      syncInspector();
-      draw();
-    }
-    else {
-      if(!e.shiftKey) {
-        selectedKeys.clear();
-        syncInspector();
-        draw();
-      }
-    }
+    if(!key) return;
+    draggingKey = key;
+    const it = items.get(key);
+    dragOffset.x = x - it.x;
+    dragOffset.y = y - it.y;
+    canvas.style.cursor = 'move';
   });
 
   window.addEventListener('mousemove', (e) => {
-    if(!draggingKey) {
-      return;
-    }
+    if(!draggingKey) return;
     const r = canvas.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
-    const dx = x - dragOffset.x - items.get(draggingKey).x;
-    const dy = y - dragOffset.y - items.get(draggingKey).y;
-    for(const key of selectedKeys) {
-      const it = items.get(key);
-      it.x += dx;
-      it.y += dy;
-    }
+    const it = items.get(draggingKey);
+    it.x = x - dragOffset.x;
+    it.y = y - dragOffset.y;
     draw();
   });
 
   window.addEventListener('mouseup', () => {
     draggingKey = null;
     canvas.style.cursor = 'default';
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if((e.key === 'Delete' || e.key === 'Backspace') && selectedKeys.size) {
-      e.preventDefault();
-      for(const key of selectedKeys) {
-        items.delete(key);
-      }
-      selectedKeys.clear();
-      syncInspector();
-      draw();
-    }
   });
 
   function renderExportToCanvas(targetCanvas, scale = 2) {
@@ -778,5 +697,4 @@
   ensureEntrySelection();
   renderEntryList();
   applyEntryToFields(getCurrentEntry());
-  syncInspector();
 })();

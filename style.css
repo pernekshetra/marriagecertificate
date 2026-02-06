@@ -71,7 +71,7 @@ a:hover {
 }
 
 .top-actions {
-  margin: 10px 0 18px;
+  margin: 0 0 18px;
 }
 
 .top-actions a {
@@ -239,6 +239,14 @@ canvas {
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.row.actions {
+  width: 100%;
+}
+
+.row.actions > button {
+  flex: 1 1 0;
 }
 
 .hint {
