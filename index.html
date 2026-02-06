@@ -2,85 +2,82 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>PERNE MUCHILOT BHAGHAVATHI KSHETRA - Marriage Certificate</title>
+  <title>PERNE MUCHILOT BHAGHAVATHI KSHETRA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#cc0000" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚭</text></svg>">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <h2>PERNE MUCHILOT BHAGHAVATHI KSHETRA</h2>
-  <h4>MARRIAGE CERTIFICATE</h4>
-
-  <canvas id="c" width="741" height="1024"></canvas>
-
-  <div class="grid">
-    <fieldset>
-      <legend>Background & Export</legend>
-      <div class="row">
-        <!-- <label>Background Image <input id="bgFile" type="file" accept="image/*" /></label> -->
-        <button id="download">Download PNG</button>
-      </div>
-      <div class="hint">Tip: You can still drag text on canvas to fine-tune positions.</div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Marriage Details</legend>
-      <label>Date <input id="marriage_date" type="date" placeholder="Date of Marriage"></label>
-      <label>Registration number<input id="registration_number" type="text" placeholder="Registration number"></label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Groom details</legend>
-      <label>Name <input id="p1_name" type="text" placeholder="Groom name" /></label>
-      <label>Parents <input id="p1_parents" type="text" placeholder="Father and mother of groom" /></label>
-      <label>Address <textarea id="p1_address" placeholder="Address (multi-line allowed)"></textarea></label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Bride details</legend>
-      <label>Name <input id="p2_name" type="text" placeholder="Bride name" /></label>
-      <label>Parents <input id="p2_parents" type="text" placeholder="Father and mother of bride" /></label>
-      <label>Address <textarea id="p2_address" placeholder="Address (multi-line allowed)"></textarea></label>
-    </fieldset>
-
-    <fieldset>
-      <legend>Selected Text Properties</legend>
-      <div class="row">
-        <label>Content <input id="selText" type="text" placeholder="(no selection)"></label>
-        <label>Color <input id="selColor" type="color" value="#000000"></label>
-        <label>Size
-          <select id="selSize">
-            <option value="12">12 px</option>
-            <option value="16">16 px</option>
-            <option value="20">20 px</option>
-            <option value="22">22 px</option>
-            <option value="24">24 px</option>
-            <option value="28" selected>28 px</option>
-            <option value="32">32 px</option>
-            <option value="36">36 px</option>
-            <option value="48">48 px</option>
-            <option value="60">60 px</option>
-            <option value="72">72 px</option>
-          </select>
-        </label>
-        <label>Font
-          <select id="selFont">
-            <option value="system-ui, sans-serif" selected>System Sans</option>
-            <option value="serif">Serif</option>
-            <option value="monospace">Monospace</option>
-          </select>
-        </label>
-        <label><input id="selBold" type="checkbox" /> Bold</label>
-        <label><input id="selShadow" type="checkbox" /> Shadow</label>
-      </div>
-      <small class="hint">Tip: Click to select, Shift+Click for multi-select, drag to move, Del/Backspace to
-        delete.</small>
-    </fieldset>
-
+  <h4>MARRIAGE CERTIFICATE - Admin</h4>
+  <div class="top-actions">
+    <span class="hint">Admin dashboard</span>
   </div>
-  <script src="script.js"></script>
-</body>
 
+  <div class="admin-layout">
+    <section class="admin-list">
+      <h3>Entries</h3>
+      <div class="row">
+        <button id="addEntry" type="button">Add Entry</button>
+        <button id="duplicateEntry" type="button">Duplicate</button>
+        <button id="deleteEntry" type="button" class="secondary">Delete</button>
+      </div>
+      <ul id="entryList" class="entry-list"></ul>
+      <div class="hint">Select an entry to load its details into the certificate editor.</div>
+    </section>
+
+    <section class="admin-editor">
+      <div class="row admin-preview-toggle">
+        <button id="togglePreview" type="button" class="secondary">Show Preview</button>
+      </div>
+      <canvas id="c" width="741" height="1024" class="preview-hidden"></canvas>
+
+      <div class="grid" id="detailsGrid">
+        <fieldset>
+          <legend>Background & Export</legend>
+          <div class="row">
+            <button id="download" type="button">Download PNG</button>
+            <button id="downloadAll" type="button" class="secondary">Download All</button>
+          </div>
+          <div class="hint">Tip: You can still drag text on canvas to fine-tune positions.</div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Marriage Details</legend>
+          <label>Date <input id="marriage_date" type="date" placeholder="Date of Marriage"></label>
+          <label>Registration number<input id="registration_number" type="text" placeholder="Registration number"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Groom details</legend>
+          <label>Name <input id="p1_name" type="text" placeholder="Groom name" /></label>
+          <label>Parents <input id="p1_parents" type="text" placeholder="Father and mother of groom" /></label>
+          <label>Address <textarea id="p1_address" placeholder="Address (multi-line allowed)"></textarea></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Bride details</legend>
+          <label>Name <input id="p2_name" type="text" placeholder="Bride name" /></label>
+          <label>Parents <input id="p2_parents" type="text" placeholder="Father and mother of bride" /></label>
+          <label>Address <textarea id="p2_address" placeholder="Address (multi-line allowed)"></textarea></label>
+        </fieldset>
+
+      </div>
+    </section>
+  </div>
+  <dialog id="deleteDialog" class="confirm-dialog">
+    <form method="dialog" class="dialog-card">
+      <h3>Delete Entry?</h3>
+      <p class="hint">This will remove the selected entry permanently.</p>
+      <div class="row dialog-actions">
+        <button value="cancel" class="secondary">Cancel</button>
+        <button value="confirm">Delete</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="script.js"></script>
+  <script src="sw-register.js"></script>
+</body>
 </html>

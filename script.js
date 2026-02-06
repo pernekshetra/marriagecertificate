@@ -55,23 +55,7 @@
     }
   }
 
-  function syncInspector() {
-    const it = getPrimary();
-    const disabled = !it;
-
-    inspectorEls.forEach(el => el && (el.disabled = disabled));
-
-    if(!it) {
-      selText.value = '';
-      return;
-    }
-    selText.value = it.text || '';
-    selColor.value = it.color || '#000000';
-    selSize.value = String(it.size || 36);
-    selFont.value = it.font || 'system-ui, sans-serif';
-    selBold.checked = !!it.bold;
-    selShadow.checked = !!it.shadow;
-  }
+  function syncInspector() {}
 
   function bindField(key, el) {
     ensureItem(key);
@@ -80,7 +64,7 @@
       draw();
     };
     el.addEventListener('input', update);
-    update(); 
+    update();
   }
 
   function draw() {
@@ -220,11 +204,6 @@
     draw();
   }
 
-  function getPrimary() {
-    const key = Array.from(selectedKeys).at(-1);
-    return key ? items.get(key) : null;
-  }
-
   function ensureItem(key) {
     if (!items.has(key)) {
       const base = {
@@ -233,7 +212,7 @@
         y: 0,
         text: '',
         ...defaults,
-        ...(presetStyles[key] || {}), // ← apply per-field overrides
+        ...(presetStyles[key] || {}),
       };
       items.set(key, base);
     }
@@ -289,6 +268,142 @@
     draw();
   }
 
+  function sanitizeFilename(value) {
+    return (value || '')
+      .toString()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9-_]/g, '')
+      .toLowerCase();
+  }
+
+  function buildFilenameFromEntry(entry, index) {
+    const groom = sanitizeFilename(entry?.p1_name);
+    const bride = sanitizeFilename(entry?.p2_name);
+    const reg = sanitizeFilename(entry?.registration_number);
+    const parts = [];
+    if(groom) parts.push(groom);
+    if(bride) parts.push(bride);
+    if(reg) parts.push(reg);
+    if(parts.length) {
+      return parts.join('_');
+    }
+    if(typeof index === 'number') {
+      return `entry-${index + 1}`;
+    }
+    return 'certificate';
+  }
+
+  function entryLabel(entry, index) {
+    const reg = (entry.registration_number || '').trim();
+    const groom = (entry.p1_name || '').trim();
+    const bride = (entry.p2_name || '').trim();
+    let label = reg ? reg : `Entry ${index + 1}`;
+    if(groom || bride) {
+      const pair = [groom, bride].filter(Boolean).join(' & ');
+      label += ` \u2022 ${pair}`;
+    }
+    return label;
+  }
+
+  function createEntry(seed = {}) {
+    const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `entry_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    return {
+      id,
+      p1_name: '',
+      p1_parents: '',
+      p1_address: '',
+      p2_name: '',
+      p2_parents: '',
+      p2_address: '',
+      marriage_date: '',
+      registration_number: '',
+      ...seed
+    };
+  }
+
+  function saveEntries() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function loadEntries() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) return [];
+      return parsed.map(entry => createEntry(entry));
+    }
+    catch {
+      return [];
+    }
+  }
+
+  function getCurrentEntry() {
+    return entries.find(entry => entry.id === currentEntryId) || null;
+  }
+
+  function updateCurrentEntryFromFields() {
+    const entry = getCurrentEntry();
+    if(!entry) return;
+    for(const key of fieldKeys) {
+      entry[key] = fields[key].value;
+    }
+    saveEntries();
+    renderEntryList();
+  }
+
+  function applyEntryToFields(entry) {
+    if(!entry) return;
+    isApplyingEntry = true;
+    for(const key of fieldKeys) {
+      fields[key].value = entry[key] || '';
+    }
+    for(const key of fieldKeys) {
+      fields[key].dispatchEvent(new Event('input'));
+    }
+    isApplyingEntry = false;
+  }
+
+  function selectEntry(id) {
+    currentEntryId = id;
+    const entry = getCurrentEntry();
+    applyEntryToFields(entry);
+    renderEntryList();
+  }
+
+  function renderEntryList() {
+    entryList.innerHTML = '';
+    entries.forEach((entry, index) => {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'entry-button';
+      if(entry.id === currentEntryId) {
+        button.classList.add('active');
+      }
+      button.textContent = entryLabel(entry, index);
+      button.addEventListener('click', () => selectEntry(entry.id));
+      li.appendChild(button);
+      entryList.appendChild(li);
+    });
+  }
+
+  function ensureEntrySelection() {
+    if(entries.length === 0) {
+      const entry = createEntry();
+      entries.push(entry);
+      currentEntryId = entry.id;
+      saveEntries();
+    }
+    if(!currentEntryId || !entries.find(entry => entry.id === currentEntryId)) {
+      currentEntryId = entries[0].id;
+    }
+  }
+
+  const STORAGE_KEY = 'mc_admin_entries_v1';
+  const fieldKeys = ['p1_name', 'p1_parents', 'p1_address', 'p2_name', 'p2_parents', 'p2_address', 'marriage_date', 'registration_number'];
+
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
   const DPR = window.devicePixelRatio || 1;
@@ -296,20 +411,20 @@
   let bgReady = false;
   const bg = new Image();
   bg.onload = () => { bgReady = true; draw(); };
-  bg.src = "base.png";
+  bg.src = 'base.png';
 
   const downloadBtn = document.getElementById('download');
+  const downloadAllBtn = document.getElementById('downloadAll');
+  const togglePreviewBtn = document.getElementById('togglePreview');
+  const detailsGrid = document.getElementById('detailsGrid');
+  const deleteDialog = document.getElementById('deleteDialog');
+  const addEntryBtn = document.getElementById('addEntry');
+  const duplicateEntryBtn = document.getElementById('duplicateEntry');
+  const deleteEntryBtn = document.getElementById('deleteEntry');
+  const entryList = document.getElementById('entryList');
 
-  const selText = document.getElementById('selText');
-  const selColor = document.getElementById('selColor');
-  const selSize = document.getElementById('selSize');
-  const selFont = document.getElementById('selFont');
-  const selBold = document.getElementById('selBold');
-  const selShadow = document.getElementById('selShadow');
-  const inspectorEls = [selText, selColor, selSize, selFont, selBold, selShadow];
-  // Disable all inspector controls on load
-  inspectorEls.forEach(el => el && (el.disabled = true));
-  
+  const inspectorEls = [];
+
   const fields = {
     p1_name: document.getElementById('p1_name'),
     p1_parents: document.getElementById('p1_parents'),
@@ -347,27 +462,59 @@
     registration_number: { size: 20, bold: true }
   };
 
-  // Fix image disappearing on resize
+  let entries = loadEntries();
+  let currentEntryId = null;
+  let isApplyingEntry = false;
+
+  function setPreviewVisible(show) {
+    if(show) {
+      canvas.classList.remove('preview-hidden');
+      togglePreviewBtn.textContent = 'Hide Preview';
+      requestRedraw();
+    }
+    else {
+      canvas.classList.add('preview-hidden');
+      togglePreviewBtn.textContent = 'Show Preview';
+    }
+  }
+
+  function hidePreviewAndScrollToFields() {
+    setPreviewVisible(false);
+    if(detailsGrid) {
+      requestAnimationFrame(() => {
+        const before = window.scrollY;
+        detailsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const firstField = fields.p1_name;
+        if(firstField) {
+          firstField.focus({ preventScroll: true });
+        }
+        setTimeout(() => {
+          if(Math.abs(window.scrollY - before) < 2) {
+            detailsGrid.classList.add('pulse-focus');
+            setTimeout(() => detailsGrid.classList.remove('pulse-focus'), 700);
+          }
+        }, 220);
+      });
+    }
+  }
+
   scaleForDPR();
   let rafId = null;
 
-  // Debounced resize (mobile URL bar hide/show fires resize)
   window.addEventListener('resize', requestRedraw);
-  // Redraw while scrolling (iOS Safari can drop canvas during scroll)
   window.addEventListener('scroll', requestRedraw, { passive: true });
-  // Redraw when tab becomes visible again
   document.addEventListener('visibilitychange', () => { if (!document.hidden) requestRedraw(); });
-  // Redraw on orientation change (some iOS versions won’t fire resize immediately)
   window.addEventListener('orientationchange', requestRedraw);
-  // Redraw when page is restored from bfcache (back/forward navigation)
   window.addEventListener('pageshow', requestRedraw);
+
+  setPreviewVisible(false);
 
   initialDraw();
 
   bindField('p1_name', fields.p1_name);
   bindField('p1_address', fields.p1_address);
   bindField('p1_parents', fields.p1_parents);
-  
+
   bindField('p2_name', fields.p2_name);
   bindField('p2_parents', fields.p2_parents);
   bindField('p2_address', fields.p2_address);
@@ -377,51 +524,18 @@
   items.get('and').size = 28;
   items.get('and').bold = false;
   items.get('and').color = '#000000';
-   
+
   bindField('marriage_date', fields.marriage_date);
   bindField('registration_number', fields.registration_number);
 
-  selText.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).text = selText.value;
-    }
-    draw();
-  });
+  for(const key of fieldKeys) {
+    fields[key].addEventListener('input', () => {
+      if(isApplyingEntry) return;
+      updateCurrentEntryFromFields();
+    });
+  }
 
-  selColor.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).color = selColor.value;
-    }
-    draw();
-  });
-
-  selSize.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).size = +selSize.value;
-    }
-    draw();
-  });
-
-  selFont.addEventListener('input', () => {
-    for(const key of selectedKeys) {
-      items.get(key).font = selFont.value;
-    }
-    draw();
-  });
-
-  selBold.addEventListener('change', () => {
-    for(const key of selectedKeys) {
-      items.get(key).bold = selBold.checked;
-    }
-    draw();
-  });
-
-  selShadow.addEventListener('change', () => {
-    for(const key of selectedKeys) {
-      items.get(key).shadow = selShadow.checked;
-    }
-    draw();
-  });
+  // Selected text properties removed in admin view.
 
   let draggingKey = null;
   let dragOffset = {x: 0, y: 0};
@@ -495,13 +609,12 @@
     }
   });
 
-  downloadBtn.addEventListener('click', () => {
+  function renderExportToCanvas(targetCanvas, scale = 2) {
     const W = canvas.width / DPR, H = canvas.height / DPR;
-    const exCanvas = document.createElement('canvas');
-    exCanvas.width = W * 2;
-    exCanvas.height = H * 2;
-    const ex = exCanvas.getContext('2d');
-    ex.scale(2, 2);
+    targetCanvas.width = W * scale;
+    targetCanvas.height = H * scale;
+    const ex = targetCanvas.getContext('2d');
+    ex.scale(scale, scale);
 
     if(bg.complete && bg.naturalWidth) {
       const ratio = Math.max(W / bg.naturalWidth, H / bg.naturalHeight);
@@ -559,26 +672,111 @@
       }
       ex.restore();
     }
+  }
 
+  downloadBtn.addEventListener('click', () => {
+    const entry = getCurrentEntry();
+    const filenameBase = buildFilenameFromEntry(entry);
+    const exCanvas = document.createElement('canvas');
+    renderExportToCanvas(exCanvas);
     const a = document.createElement('a');
-    a.download = 'two-person-card.png';
+    a.download = `${filenameBase}.png`;
     a.href = exCanvas.toDataURL('image/png');
     a.click();
   });
 
-  fields.p1_name.value = 'BRIDEGROOM NAME';
-  fields.p1_parents.value = 'Father name and Mothers name of the groom';
-  fields.p1_address.value = 'Bridegroom address line 1\nBridegroom address line 2';
+  downloadAllBtn.addEventListener('click', () => {
+    if(entries.length === 0) return;
+    const originalId = currentEntryId;
+    let index = 0;
 
-  fields.p2_name.value = 'BRIDE NAME ';
-  fields.p2_parents.value = 'Father name and Mothers name of the bride';
-  fields.p2_address.value = 'Bride address line 1\nBride address line 2';
+    const downloadNext = () => {
+      if(index >= entries.length) {
+        selectEntry(originalId);
+        return;
+      }
+      const entry = entries[index];
+      currentEntryId = entry.id;
+      applyEntryToFields(entry);
+      const filenameBase = buildFilenameFromEntry(entry, index);
+      const exCanvas = document.createElement('canvas');
+      renderExportToCanvas(exCanvas);
+      const a = document.createElement('a');
+      a.download = `${filenameBase}.png`;
+      a.href = exCanvas.toDataURL('image/png');
+      a.click();
+      index += 1;
+      setTimeout(downloadNext, 350);
+    };
 
-  fields.marriage_date.value = '2025-11-18';
-  fields.registration_number.value = '01/2025';
+    downloadNext();
+  });
 
-  for(const k in fields) {
-    fields[k].dispatchEvent(new Event('input'));
+  addEntryBtn.addEventListener('click', () => {
+    const entry = createEntry();
+    entries.push(entry);
+    currentEntryId = entry.id;
+    saveEntries();
+    renderEntryList();
+    applyEntryToFields(entry);
+    hidePreviewAndScrollToFields();
+  });
+
+  duplicateEntryBtn.addEventListener('click', () => {
+    const current = getCurrentEntry();
+    if(!current) return;
+    const clone = createEntry({
+      p1_name: current.p1_name,
+      p1_parents: current.p1_parents,
+      p1_address: current.p1_address,
+      p2_name: current.p2_name,
+      p2_parents: current.p2_parents,
+      p2_address: current.p2_address,
+      marriage_date: current.marriage_date,
+      registration_number: current.registration_number
+    });
+    entries.push(clone);
+    currentEntryId = clone.id;
+    saveEntries();
+    renderEntryList();
+    applyEntryToFields(clone);
+    hidePreviewAndScrollToFields();
+  });
+
+  deleteEntryBtn.addEventListener('click', () => {
+    const current = getCurrentEntry();
+    if(!current) return;
+    if(!deleteDialog) {
+      entries = entries.filter(entry => entry.id !== current.id);
+      saveEntries();
+      ensureEntrySelection();
+      renderEntryList();
+      applyEntryToFields(getCurrentEntry());
+      return;
+    }
+    deleteDialog.showModal();
+  });
+
+  if(deleteDialog) {
+    deleteDialog.addEventListener('close', () => {
+      if(deleteDialog.returnValue !== 'confirm') return;
+      const current = getCurrentEntry();
+      if(!current) return;
+      entries = entries.filter(entry => entry.id !== current.id);
+      saveEntries();
+      ensureEntrySelection();
+      renderEntryList();
+      applyEntryToFields(getCurrentEntry());
+    });
   }
+
+  togglePreviewBtn.addEventListener('click', () => {
+    const isHidden = canvas.classList.contains('preview-hidden');
+    setPreviewVisible(isHidden);
+  });
+
+  ensureEntrySelection();
+  renderEntryList();
+  applyEntryToFields(getCurrentEntry());
   syncInspector();
 })();
