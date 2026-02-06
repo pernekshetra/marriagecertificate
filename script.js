@@ -593,18 +593,51 @@
     }
   }
 
+  const isIOS = (() => {
+    const ua = navigator.userAgent || '';
+    const iOSDevice = /iPad|iPhone|iPod/.test(ua);
+    const iPadOS13Up = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return iOSDevice || iPadOS13Up;
+  })();
+
+  function triggerDownload(canvas, filenameBase) {
+    const filename = `${filenameBase}.png`;
+
+    if(isIOS) {
+      if(canvas.toBlob) {
+        canvas.toBlob((blob) => {
+          if(!blob) return;
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        }, 'image/png');
+      }
+      else {
+        const dataUrl = canvas.toDataURL('image/png');
+        window.open(dataUrl, '_blank');
+      }
+      return;
+    }
+
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }
+
   downloadBtn.addEventListener('click', () => {
     const entry = getCurrentEntry();
     const filenameBase = buildFilenameFromEntry(entry);
     const exCanvas = document.createElement('canvas');
     renderExportToCanvas(exCanvas);
-    const a = document.createElement('a');
-    a.download = `${filenameBase}.png`;
-    a.href = exCanvas.toDataURL('image/png');
-    a.click();
+    triggerDownload(exCanvas, filenameBase);
   });
 
   downloadAllBtn.addEventListener('click', () => {
+    if(isIOS) {
+      window.alert('iOS Safari does not support automatic multi-file downloads. Please use Download PNG for each entry.');
+      return;
+    }
     if(entries.length === 0) return;
     const originalId = currentEntryId;
     let index = 0;
@@ -620,10 +653,7 @@
       const filenameBase = buildFilenameFromEntry(entry, index);
       const exCanvas = document.createElement('canvas');
       renderExportToCanvas(exCanvas);
-      const a = document.createElement('a');
-      a.download = `${filenameBase}.png`;
-      a.href = exCanvas.toDataURL('image/png');
-      a.click();
+      triggerDownload(exCanvas, filenameBase);
       index += 1;
       setTimeout(downloadNext, 350);
     };
